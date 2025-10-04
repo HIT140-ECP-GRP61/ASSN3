@@ -1,7 +1,7 @@
 # HIT140 Foundations of Data Science
-Group Project Presentation Assignment 2
+Group Project Presentation Assignment 3
 <br />
-Objective 1: Investigation A 
+Objective 2: Investigation B 
 (Bat vs. Rat)
 
 
