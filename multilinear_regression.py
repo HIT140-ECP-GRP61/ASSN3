@@ -41,4 +41,7 @@ def load_engineered(path: str) -> pd.DataFrame:
     return df
 
 
-    #TODO: 1. write out regression results to a text file
+    #TODO: 
+    # 1. complete regression BAI_mult=β0​+β1​(Summer)+β2​(Winter)+β3​(Spring)+ϵ
+
+    # 1. write out regression results to a text file
