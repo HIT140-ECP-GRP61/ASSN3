@@ -2,7 +2,9 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
-
+"""
+Feature engineering for Bat Avoidance Index (BAI)
+"""
 #TODO: 1. engineered dataset is too big, need to reduce size
 #      2. add more features? e.g. polynomial terms, etc.
 #   3. assume northern hemisphere for season mapping
