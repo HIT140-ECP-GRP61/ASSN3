@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
+#TODO: 1. engineered dataset is too big, need to reduce size
+#      2. add more features? e.g. polynomial terms, etc.
+#   3. assume northern hemisphere for season mapping
 def season_from_month(m: int) -> str:
     # Southern Hemisphere presume???
     if m in [11, 0, 1]:
