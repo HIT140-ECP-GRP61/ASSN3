@@ -45,16 +45,37 @@ def build_bai(
 ):
   
     d1 = pd.read_csv(d1_path)   
-    d2 = pd.read_csv(d2_path)   #
+    d2 = pd.read_csv(d2_path)   #TODO: check columns exist
 
     # Compress dataset2  month-level mean landing frequency
+    '''
+    
+ctx (monthly mean)
+
+| month | bat_landing_number_month    |
++-------+-----------------------------+
+|   1   |           mean              |
+|   2   |           mean              |
+    
+    '''
     ctx = (d2.groupby("month", as_index=False)
              .agg(bat_landing_number_month=("bat_landing_number", "mean")))
 
     # Merge 1-to-1 on month 
     df = pd.merge(d1, ctx, on="month", how="inner")
+    '''
+   
+
+df = merge(d1, ctx, on="month")
+| month | bat_landing_to_food    | bat_landing_number_month    |
++-------+------------------------+-----------------------------+
+|   1   |         ...            |           ...               |
+|   2   |         ...            |           ...               |
+    
+    '''
 
     #  Clean  winsorize core variables
+    
     core_cols = ["bat_landing_to_food", "bat_landing_number_month"]
     df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=core_cols).copy()
 
@@ -72,6 +93,13 @@ def build_bai(
 
     # Season category
     df["season"] = df["month"].apply(season_from_month).astype("category")
+    '''
+    df
+| month | bat_landing_to_food    | bat_landing_number_month    | Z_bat_landing_to_food    | Z_bat_landing_number_mon | BAI_mult |
++-------+------------------------+-----------------------------+--------------------------+--------------------------+----------+
+|   1   |         ...            |           ...               |           ...            |           ...            |   ...    |
+|   2   |         ...            |           ...               |           ...            |           ...            |   ...    |
+    '''
 
     if os.path.dirname(out_path):
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
