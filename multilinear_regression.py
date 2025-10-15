@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 import numpy as np
+from ols_utils import ols_fit  
 
 """
 BAI_mult∼C(season)
@@ -37,26 +38,6 @@ def build_design(df: pd.DataFrame, y_col: str, season_col: str, baseline: str):
     X = np.hstack(X_parts)
     return X, y, names
 
-def ols_fit(X: np.ndarray, y: np.ndarray):
-    #  least squares
-    beta, *_ = np.linalg.lstsq(X, y, rcond=None)
-    yhat = X @ beta
-    resid = y - yhat
-
-    n, p = X.shape
-    dof = max(n - p, 1)
-    ss_res = float(resid @ resid)
-    ss_tot = float(((y - y.mean()) @ (y - y.mean())))
-    r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
-    adj_r2 = 1.0 - (1 - r2) * (n - 1) / dof
-
-    sigma2 = ss_res / dof
-    XtX_inv = np.linalg.pinv(X.T @ X)
-    var_beta = sigma2 * XtX_inv
-    se_beta = np.sqrt(np.clip(np.diag(var_beta), 0.0, np.inf))
-
-    return beta, se_beta, yhat, resid, r2, adj_r2, dof
-
 def print_table(names, beta, se, z=1.96):
     ci_lo = beta - z * se
     ci_hi = beta + z * se
@@ -80,8 +61,7 @@ def load_engineered(path: str):
 
     # Build design and fit
     X, y, names = build_design(df, y_col="BAI_mult", season_col="season", baseline=args.baseline)
-    beta, se, yhat, resid, r2, adj_r2, dof = ols_fit(X, y)
-
+    beta, se, yhat, resid, r2, adj_r2, dof = ols_fit(X, y)  
     print("\n====================== OLS: BAI_mult ~ C(season) (np/pd only) ======================")
     print(f"n = {len(y)}, p = {X.shape[1]}, dof = {dof}")
     print(f"R^2 = {r2:.4f},  Adjusted R^2 = {adj_r2:.4f}")
