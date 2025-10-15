@@ -1,17 +1,45 @@
 import numpy as np
 
+
 def ols_fit(X: np.ndarray, y: np.ndarray):
     """
-    Ordinary Least Squares regression using linear algebra.
-    Returns:
-        beta: Coefficient estimates
-        se_beta: Standard errors
-        yhat: Fitted values
-        resid: Residuals
-        r2: R-squared
-        adj_r2: Adjusted R-squared
-        dof: Degrees of freedom
+    Ordinary Least Squares formulas:
+
+    Given:
+        X : n x p design matrix
+        y : n x 1 response vector
+
+    Estimate coefficients:
+        beta = (X^T X)^(-1) X^T y
+
+    Fitted values:
+        yhat = X beta
+
+    Residuals:
+        resid = y - yhat
+
+    Residual sum of squares:
+        SS_res = resid^T resid
+
+    Total sum of squares:
+        SS_tot = (y - mean(y))^T (y - mean(y))
+
+    R-squared:
+        R^2 = 1 - SS_res / SS_tot
+
+    Adjusted R-squared:
+        adj_R^2 = 1 - (1 - R^2) * (n - 1) / (n - p)
+
+    Variance of beta:
+        Var(beta) = sigma^2 * (X^T X)^(-1)
+        where sigma^2 = SS_res / (n - p)
+
+    Standard error:
+        se_beta = sqrt(diag(Var(beta)))
     """
+
+
+
     beta, *_ = np.linalg.lstsq(X, y, rcond=None)
     yhat = X @ beta
     resid = y - yhat
