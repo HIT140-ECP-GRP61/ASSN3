@@ -78,6 +78,59 @@ def load_engineered(path: str):
     print(desc.to_string(index=False))
 
 
+  def visualise_raw_and_transformed_data(path: str):
+    df = pd.read_csv(path)
+    df["BAI_raw"] = df["bat_landing_to_food"] / df["bat_landing_number"]
+    season = df["season"]
+
+    winter = season == "Winter"
+    summer = season == "Summer"
+    autumn = season == "Autumn"
+    
+    winter_bai_values = df[winter]["BAI_raw"]
+    summer_bai_values = df[summer]["BAI_raw"]
+    autumn_bai_values = df[autumn]["BAI_raw"]
+    
+    x1 = summer_bai_values.mean()
+    x2 = autumn_bai_values.mean()
+    x3 = winter_bai_values.mean()
+
+    x = [x1, x2, x3]
+    labels = ["Autumn", "Summer", "Winter"]
+
+    plt.bar(labels, x, color=['sandybrown', 'lightgreen', 'skyblue'])
+    plt.title("Distribution of Average Bat Avoidance by Season")
+    plt.ylabel("BAI_raw (Bat Landing Ratio)")
+    plt.xlabel("Season")
+    
+    plt.show()
+
+    #Visualise Transformed data (log and standardisation)
+    df["BAI_LOG"] = df["BAI_raw"].apply(np.log)
+
+
+    scaler = StandardScaler()
+    Z_BAI_LOG = scaler.fit_transform(df[["BAI_LOG"]])
+
+    df["BAI_scaled"] = Z_BAI_LOG
+    z_winter_bai_values = df[winter]["BAI_scaled"]
+    z_summer_bai_values = df[summer]["BAI_scaled"]
+    z_autumn_bai_values = df[autumn]["BAI_scaled"]
+    
+    z_x1 = z_summer_bai_values.mean()
+    z_x2 = z_autumn_bai_values.mean()
+    z_x3 = z_winter_bai_values.mean()
+
+    z_x = [z_x1, z_x2, z_x3]
+
+    plt.bar(labels, z_x, color=['sandybrown', 'lightgreen', 'skyblue'])
+    plt.title("Distribution of Average Bat Avoidance by Season")
+    plt.ylabel("BAI_scaled (Bat Landing Ratio)")
+    plt.xlabel("Season")
+    
+    plt.show()
+    return df
+
     #TODO: 
     # 1. complete regression BAI_mult=β0​+β1​(Summer)+β2​(Winter)+β3​(Spring)+ϵ
 
@@ -85,6 +138,7 @@ def load_engineered(path: str):
 
 def main():
     load_engineered(IN_PATH)
-
-
+    df = visualise_raw_and_transformed_data(IN_PATH)
+    print(df.columns)
+    
 main()
