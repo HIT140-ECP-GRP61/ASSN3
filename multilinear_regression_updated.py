@@ -160,18 +160,39 @@ def visualise_raw(path: str):
 def visualise_transformed(df: pd.DataFrame):
 #Visualise Transformed data (log and standardisation)
     df["BAI_LOG"] = df["BAI_raw"].apply(np.log)
-
+    
+    Q1 = df["BAI_LOG"].quantile(0.25)
+    Q3 = df["BAI_LOG"].quantile(0.75)
+    IQR = Q3 - Q1
+    
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    
+    # Filter the DataFrame to keep only non-outliers
+    non_outliers_mask = (df["BAI_LOG"] >= lower_bound) & (df["BAI_LOG"] <= upper_bound)
+    df_cleaned = df[non_outliers_mask].copy()
+    
+    # Report the change (Crucial feedback)
+    n_original = len(df)
+    n_cleaned = len(df_cleaned)
+    n_removed = n_original - n_cleaned
+    
+    print(f"\n--- Outlier Removal using IQR on BAI_LOG ---")
+    print(f"Original observations (n): {n_original}")
+    print(f"Removed outliers (n): {n_removed}")
+    print(f"Final observations for OLS (n): {n_cleaned} ({n_removed / n_original * 100:.2f}% removed)")
+    
     scaler = StandardScaler()
-    Z_BAI_LOG = scaler.fit_transform(df[["BAI_LOG"]])
-    season = df["season"]
+    Z_BAI_LOG = scaler.fit_transform(df_cleaned[["BAI_LOG"]])
+    season = df_cleaned["season"]
     autumn = season == "Autumn"
     winter = season == "Winter"
     summer = season == "Summer"
-    df["BAI_scaled"] = Z_BAI_LOG
+    df_cleaned["BAI_scaled"] = Z_BAI_LOG
     labels = ["Autumn", "Summer", "Winter"]
-    z_autumn_bai_values = df[autumn]["BAI_scaled"]
-    z_summer_bai_values = df[summer]["BAI_scaled"]
-    z_winter_bai_values = df[winter]["BAI_scaled"]
+    z_autumn_bai_values = df_cleaned.loc[autumn, "BAI_scaled"]
+    z_summer_bai_values = df_cleaned.loc[summer, "BAI_scaled"]
+    z_winter_bai_values = df_cleaned.loc[winter, "BAI_scaled"]
     
     z_x1 = z_autumn_bai_values.mean()
     z_x2 = z_summer_bai_values.mean()
@@ -186,7 +207,7 @@ def visualise_transformed(df: pd.DataFrame):
     plt.xlabel("Season")
     
     plt.show()
-    return df
+    return df_cleaned
 
 def run_base_model(df: pd.DataFrame):
 # Temporarily copy BAI_raw to the expected Y column name
@@ -223,7 +244,7 @@ def main():
     
     df_raw = visualise_raw(IN_PATH)
     df_transformed = visualise_transformed(df_raw)
-    visualise_collinearity(df_raw)
+    visualise_collinearity(df_transformed)
     r2_base, resid_base, beta_base = run_base_model(df_raw)
     r2_opt, resid_opt, beta_opt = load_engineered(df_transformed)
     
