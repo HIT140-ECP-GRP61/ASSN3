@@ -2,7 +2,7 @@ import argparse
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, PowerTransformer
 import seaborn as sns
 
 """
@@ -99,7 +99,7 @@ def load_engineered(df: pd.DataFrame):
     desc["ci95_high"] = desc["mean"] + 1.96 * desc["se"]
     print("\nSeasonal means of BAI_scaled (descriptive, 95% normal CI):")
     print(desc.to_string(index=False))
-
+    
     return r2, resid, beta
 
 def visualise_collinearity(df: pd.DataFrame):
@@ -154,9 +154,6 @@ def visualise_raw(path: str):
     
     return df
 
-    #TODO: 
-    # 1. write out regression results to a text file
-
 def visualise_transformed(df: pd.DataFrame):
 #Visualise Transformed data (log and standardisation)
     df["BAI_LOG"] = df["BAI_raw"].apply(np.log)
@@ -171,8 +168,7 @@ def visualise_transformed(df: pd.DataFrame):
     # Filter the DataFrame to keep only non-outliers
     non_outliers_mask = (df["BAI_LOG"] >= lower_bound) & (df["BAI_LOG"] <= upper_bound)
     df_cleaned = df[non_outliers_mask].copy()
-    
-    # Report the change (Crucial feedback)
+
     n_original = len(df)
     n_cleaned = len(df_cleaned)
     n_removed = n_original - n_cleaned
@@ -210,26 +206,23 @@ def visualise_transformed(df: pd.DataFrame):
     return df_cleaned
 
 def run_base_model(df: pd.DataFrame):
-# Temporarily copy BAI_raw to the expected Y column name
-    df_base = df.copy()
-    df_base["BAI_temp"] = df_base["BAI_raw"] # Use the raw, non-transformed data
 
-    # Re-run arg parsing to get baseline
+    df_base = df.copy()
+    df_base["BAI_temp"] = df_base["BAI_raw"]
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--baseline", default=BASELINE_SEASON)
     args, unknown = ap.parse_known_args()
 
     # Build design matrix (X is the same dummies as before)
     X, y_raw, names = build_design(df_base, y_col="BAI_temp", season_col="season", baseline=args.baseline)
-    
-    # Fit the OLS model
     beta, se, yhat, resid, r2, adj_r2, dof = ols_fit(X, y_raw)
 
     print("=============== BASE MODEL: BAI_raw (season) ===============")
     print(f"n = {len(y_raw)}, R^2 = {r2:.4f}, Adjusted R^2 = {adj_r2:.4f}")
     print_table(names, beta, se)
 
-    # Visualize Residuals for the BASE Model (Crucial Check)
+    # Visualize Errors for the BASE Model
     plt.figure(figsize=(8, 4))
     plt.scatter(yhat, resid, alpha=0.6)
     plt.axhline(0, color='red', linestyle='--', linewidth=1)
@@ -252,3 +245,6 @@ def main():
     print("OPT MODEL (BAI_scaled) R2 = ", r2_opt)
 
 main()
+
+    #TODO: 
+    # 1. write out regression results to a text file
