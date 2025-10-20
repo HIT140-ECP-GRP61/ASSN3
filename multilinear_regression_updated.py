@@ -72,39 +72,39 @@ def print_table(names, beta, se, z=1.96):
 
 
 def load_engineered(df: pd.DataFrame):
-    ap = argparse.ArgumentParser(description="NumPy/Pandas OLS: BAI_scaled ~ C(season)")
+    ap = argparse.ArgumentParser(description="NumPy/Pandas OLS: BAI_mult ~ C(season)")
     #ap.add_argument("--in", dest="in_path", default=path)
     ap.add_argument("--baseline", default=BASELINE_SEASON)
     args = ap.parse_args()
 
     #df = pd.read_csv(args.in_path)
-    if "season" not in df.columns or "BAI_scaled" not in df.columns:
-        raise KeyError("engineered_bai.csv must contain 'season' and 'BAI_scaled'.")
+    if "season" not in df.columns or "BAI_mult" not in df.columns:
+        raise KeyError("engineered_bai.csv must contain 'season' and 'BAI_mult'.")
 
     # Build design and fit
-    X, y, names = build_design(df, y_col="BAI_scaled", season_col="season", baseline=args.baseline)
-    beta, se, yhat, resid, r2, adj_r2, dof = ols_fit(X, y)
+    X, y, names = build_design(df, y_col="BAI_mult", season_col="season", baseline=args.baseline)
+    beta, se, yhat, resid, r2_opt, adj_r2, dof = ols_fit(X, y)
 
-    print("\n====================== OLS: BAI_scaled ~ C(season) (np/pd only) ======================")
+    print("\n====================== OLS: BAI_mult ~ C(season) (np/pd only) ======================")
     print(f"n = {len(y)}, p = {X.shape[1]}, dof = {dof}")
-    print(f"R^2 = {r2:.4f},  Adjusted R^2 = {adj_r2:.4f}")
+    print(f"R^2 = {r2_opt:.4f},  Adjusted R^2 = {adj_r2:.4f}")
     print_table(names, beta, se, z=1.96)
 
-    
-    desc = (df.groupby("season")["BAI_scaled"]
+
+    desc = (df.groupby("season")["BAI_mult"]
               .agg(mean="mean", sd="std", n="count")
               .reset_index())
     desc["se"] = desc["sd"] / np.sqrt(desc["n"].clip(lower=1))
     desc["ci95_low"]  = desc["mean"] - 1.96 * desc["se"]
     desc["ci95_high"] = desc["mean"] + 1.96 * desc["se"]
-    print("\nSeasonal means of BAI_scaled (descriptive, 95% normal CI):")
+    print("\nSeasonal means of BAI_mult (descriptive, 95% normal CI):")
     print(desc.to_string(index=False))
     
-    return r2, resid, beta
+    return r2_opt, resid, beta
 
 def visualise_collinearity(df: pd.DataFrame):
     seasonal_dummies = pd.get_dummies(df["season"], prefix='season', drop_first=True, dtype=int)
-    df_collinearity = pd.DataFrame(df["BAI_scaled"]).join(seasonal_dummies)
+    df_collinearity = pd.DataFrame(df["BAI_mult"]).join(seasonal_dummies)
     #Collinearity check
     corr = df_collinearity.corr()
     # Plot the pairwise correlation as heatmap
@@ -124,10 +124,10 @@ def visualise_collinearity(df: pd.DataFrame):
     )
 
     plt.show()
-    return
+    return df
 
 def visualise_raw(path: str):
-    df = pd.read_csv(path)
+    df = pd.read_csv(path).copy()
     df["BAI_raw"] = df["bat_landing_to_food"] / df["bat_landing_number"]
     season = df["season"]
     autumn = season == "Autumn"
@@ -154,41 +154,42 @@ def visualise_raw(path: str):
     
     return df
 
-def visualise_transformed(df: pd.DataFrame):
+def visualise_transformed(path: str):
+    df = pd.read_csv(path)
 #Visualise Transformed data (log and standardisation)
-    df["BAI_LOG"] = df["BAI_raw"].apply(np.log)
+    # df["BAI_LOG"] = df["BAI_raw"].apply(np.log)
     
-    Q1 = df["BAI_LOG"].quantile(0.25)
-    Q3 = df["BAI_LOG"].quantile(0.75)
-    IQR = Q3 - Q1
+    # Q1 = df["BAI_LOG"].quantile(0.25)
+    # Q3 = df["BAI_LOG"].quantile(0.75)
+    # IQR = Q3 - Q1
     
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
+    # lower_bound = Q1 - 1.5 * IQR
+    # upper_bound = Q3 + 1.5 * IQR
     
     # Filter the DataFrame to keep only non-outliers
-    non_outliers_mask = (df["BAI_LOG"] >= lower_bound) & (df["BAI_LOG"] <= upper_bound)
-    df_cleaned = df[non_outliers_mask].copy()
+    # non_outliers_mask = (df["BAI_LOG"] >= lower_bound) & (df["BAI_LOG"] <= upper_bound)
+    # df_cleaned = df[non_outliers_mask].copy()
 
-    n_original = len(df)
-    n_cleaned = len(df_cleaned)
-    n_removed = n_original - n_cleaned
+    # n_original = len(df)
+    # n_cleaned = len(df_cleaned)
+    # n_removed = n_original - n_cleaned
     
-    print(f"\n--- Outlier Removal using IQR on BAI_LOG ---")
-    print(f"Original observations (n): {n_original}")
-    print(f"Removed outliers (n): {n_removed}")
-    print(f"Final observations for OLS (n): {n_cleaned} ({n_removed / n_original * 100:.2f}% removed)")
+    #print(f"\n--- Outlier Removal using IQR on BAI_LOG ---")
+    #print(f"Original observations (n): {n_original}")
+    #print(f"Removed outliers (n): {n_removed}")
+    #print(f"Final observations for OLS (n): {n_cleaned} ({n_removed / n_original * 100:.2f}% removed)")
     
-    scaler = StandardScaler()
-    Z_BAI_LOG = scaler.fit_transform(df_cleaned[["BAI_LOG"]])
-    season = df_cleaned["season"]
+    #scaler = StandardScaler()
+    #Z_BAI_LOG = scaler.fit_transform(df_cleaned[["BAI_LOG"]])
+    season = df["season"]
     autumn = season == "Autumn"
     winter = season == "Winter"
     summer = season == "Summer"
-    df_cleaned["BAI_scaled"] = Z_BAI_LOG
+    #df_cleaned["BAI_mult"] = Z_BAI_LOG
     labels = ["Autumn", "Summer", "Winter"]
-    z_autumn_bai_values = df_cleaned.loc[autumn, "BAI_scaled"]
-    z_summer_bai_values = df_cleaned.loc[summer, "BAI_scaled"]
-    z_winter_bai_values = df_cleaned.loc[winter, "BAI_scaled"]
+    z_autumn_bai_values = df.loc[autumn, "BAI_mult"]
+    z_summer_bai_values = df.loc[summer, "BAI_mult"]
+    z_winter_bai_values = df.loc[winter, "BAI_mult"]
     
     z_x1 = z_autumn_bai_values.mean()
     z_x2 = z_summer_bai_values.mean()
@@ -199,11 +200,11 @@ def visualise_transformed(df: pd.DataFrame):
 
     plt.bar(labels, z_x, color=['sandybrown', 'lightgreen', 'skyblue'])
     plt.title("Distribution of Average Bat Avoidance by Season")
-    plt.ylabel("BAI_scaled (Bat Landing Ratio)")
+    plt.ylabel("BAI_mult (Bat Landing Ratio)")
     plt.xlabel("Season")
     
     plt.show()
-    return df_cleaned
+    return df
 
 def run_base_model(df: pd.DataFrame):
 
@@ -216,10 +217,10 @@ def run_base_model(df: pd.DataFrame):
 
     # Build design matrix (X is the same dummies as before)
     X, y_raw, names = build_design(df_base, y_col="BAI_temp", season_col="season", baseline=args.baseline)
-    beta, se, yhat, resid, r2, adj_r2, dof = ols_fit(X, y_raw)
+    beta, se, yhat, resid, r2_base, adj_r2, dof = ols_fit(X, y_raw)
 
     print("=============== BASE MODEL: BAI_raw (season) ===============")
-    print(f"n = {len(y_raw)}, R^2 = {r2:.4f}, Adjusted R^2 = {adj_r2:.4f}")
+    print(f"n = {len(y_raw)}, R^2 = {r2_base:.4f}, Adjusted R^2 = {adj_r2:.4f}")
     print_table(names, beta, se)
 
     # Visualize Errors for the BASE Model
@@ -231,20 +232,17 @@ def run_base_model(df: pd.DataFrame):
     plt.ylabel("Residuals (Error)")
     plt.show()
 
-    return r2, resid, beta
+    return r2_base, resid, beta
 
 def main():
     
     df_raw = visualise_raw(IN_PATH)
-    df_transformed = visualise_transformed(df_raw)
+    df_transformed = visualise_transformed(IN_PATH)
     visualise_collinearity(df_transformed)
-    r2_base, resid_base, beta_base = run_base_model(df_raw)
-    r2_opt, resid_opt, beta_opt = load_engineered(df_transformed)
+    r2_base, resid, beta = run_base_model(df_raw)
+    r2_opt, resid, beta = load_engineered(df_transformed)
     
     print("BASE MODEL (BAI_raw) R2 = ", r2_base)
-    print("OPT MODEL (BAI_scaled) R2 = ", r2_opt)
+    print("OPT MODEL (BAI_mult) R2 = ", r2_opt)
 
 main()
-
-    #TODO: 
-    # 1. write out regression results to a text file
