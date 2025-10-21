@@ -14,7 +14,7 @@ Objective 2: Investigation B
 |Jack David Manning|S303126||@s303126|
 
 ## run
-python3 decision_tree_regression.py   --in engineered_bai.csv   --max_depth 6 --min_samples_leaf 20 --test_size 0.30
+python3 decision_tree_updated.py   --in engineered_bai.csv   --max_depth 6 --min_samples_leaf 20 --test_size 0.30
 
 ##  Project Resources
 OneDrive Folder: 
