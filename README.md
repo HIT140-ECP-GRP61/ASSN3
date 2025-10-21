@@ -13,8 +13,9 @@ Objective 2: Investigation B
 |Susmita Aryal|S388252||@Aalia259|
 |Jack David Manning|S303126||@s303126|
 
-## Work flow
-establish methods ->establish linear regression model and feature engineering->write codes-> Group report
+## run
+python3 decision_tree_regression.py   --in engineered_bai.csv   --max_depth 6 --min_samples_leaf 20 --test_size 0.30
+
 ##  Project Resources
 OneDrive Folder: 
 <br />
